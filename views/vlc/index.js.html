@@ -1,0 +1,417 @@
+﻿@!(model)
+<!DOCTYPE html>
+<html>
+	<head>
+	    <title>VLC</title>
+		<meta name="application-name" content="VLC" />
+		
+        <script type="text/javascript" src="assets/js/jquery-1.7.2.min.js"></script>
+        <script type="text/javascript" src="assets/js/jquery-ui-1.8.22.min.js"></script>
+        <script type="text/javascript" src="assets/js/JQuery.ACT.js"></script>
+        <script type="text/javascript" src="assets/js/socket.io.js"></script>
+        <script type="text/javascript" src="assets/js/quantize.js"></script>
+        <script type="text/javascript" src="assets/js/color-tunes.js"></script>
+        <link type="text/css" href="assets/css/jquery-ui-1.8.22.custom.css" rel="stylesheet">        
+    	<link type="text/css" href="assets/css/domojs-32.css" rel="stylesheet">        
+        <style type="text/css">
+            html, body
+            {
+                margin:0;
+                height:100%;
+                width:100%;
+				overflow:hidden;
+				font-family:Segoe UI Light, Arial;
+				font-size:x-large;
+            }
+        
+			.icon-32
+			{
+				background-image:url('assets/img/domojs-32.png');
+				display:block;
+			}
+			
+			#controls .left
+			{
+				float:left;
+			}
+			
+			#controls .right
+			{
+				float:right;
+			}
+			
+			#player
+			{
+				text-align:center;
+				font-size:xx-large;
+			}
+
+            .player
+            {
+				background-color:#000;
+                background-repeat:no-repeat;
+                background-position:center center;
+                position:absolute;
+                height:100%;
+                width:100%;
+                top:0px;
+                left:0px;
+                right:0px;
+                bottom:0px;
+            }
+            
+            #overlay
+            {
+				background:rgba(255,255,255,0.01);
+                -ms-filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#3FFFFFF,endColorstr=#3FFFFFF);
+                filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#3FFFFFF,endColorstr=#3FFFFFF);
+				overflow:hidden;
+            }
+            
+            #controls
+            {
+				display:none;
+                margin:0 auto;
+                opacity:0.75;
+                width:75%;
+                color:white;
+				padding-top:30px;
+				position:absolute;
+				bottom:0px;
+				left:12.5%
+            }
+			
+			#controls .left,
+			#controls .right
+			{
+				margin-top:-15px;
+				line-height:32px;
+			}			
+            
+            #progress
+            {
+                height:5px;
+                background:rgba(255,255,255,0.1);
+                border:none;
+            }
+			
+			#console
+			{
+				width:100%; 
+				position:relative; 
+				margin-top:0px; 
+				height:50px; 
+				z-index:10000;
+				background:black;
+			}
+			
+			#console input
+			{
+				background:transparent;
+				border:none;
+				color:white;
+				font-size:20pt;
+				line-height:20pt;
+			}
+			
+			#playlist
+			{
+				/*list-style:none;*/
+				float:right;
+				width:20%;
+				height:80%;
+				color:white;
+				border:solid 1px white;
+			}
+			
+			#tracks
+			{
+				/*list-style:none;*/
+				float:left;
+				width:20%;
+				height:80%;
+				border:solid 1px white;
+				color:white;
+				overflow: auto;
+			}
+        </style>
+		<style type="text/css" id="colorTunesCss"></style>
+		<script type="text/javascript">
+			function renderMedia(item)
+			{
+				var li=$('<li></li>');
+				li.data('media', item);
+				if(item.artist)
+					li.append('<span class="track-artist">'+item.artist+'</span> - ');
+				li.append('<span class="title">'+item.name+'</span>');
+				if(item.episode)
+				{
+					li.append(' ');
+					if(item.season)
+						li.append('S'+item.season);
+					li.append('E'+item.episode);
+					$.ajax({url:'/vlc/hasNext', type:'post', dataType:'json', contentType:'application/json', data:JSON.stringify(item), success:function (result){
+						if(result)
+						{
+							$('<span style="float:right;cursor:hand">-&gt;</span>').on('click', function(){
+								commands.play(result.id);
+							}).appendTo(li);
+						}
+					}});
+				}
+				return li;
+			}
+
+		
+			if(window.external && typeof(window.external.msIsSiteMode)!='undefined' && window.external.msIsSiteMode()){
+				window.external.msSiteModeCreateJumpList('Recently played');
+				@for(var i in model.mru)
+				{
+					window.external.msSiteModeAddJumpListItem('@(model.mru[i].artist) - @(model.mru[i].name)', '/vlc?mru=@i', '/favicon.ico');
+				}
+				window.external.msSiteModeShowJumpList();
+				window.external.msSiteModeCreateJumpList('Videos series');
+				@for(var i in model.series)
+				{
+					window.external.msSiteModeAddJumpListItem('@(model.series[i].name) S@(model.series[i].season)E@(model.series[i].episode)', '/vlc?serie=@i', '/favicon.ico');
+				}
+				window.external.msSiteModeShowJumpList();
+			}
+		</script>
+	</head>
+    <body>
+		<div id="console">
+			<input type="text">
+		</div>
+        <div id="player" class="player playlist">
+			<span class="track-album album"></span> - <span class="track-artist artist"></span><br />
+			<span class="track-title title"></span><br />
+			<img id="artwork" width="500" style="border:none; display: none" />
+			<canvas id="artworkCanvas" style="width: 500px"></canvas>
+        </div>
+		<div id="overlay" class="player">
+			<ol id="tracks">
+
+			</ol>
+			<script type="text/javascript">
+			
+				@if(model.series)
+				{
+					@for(var i in model.series)
+					{
+						renderMedia(@(JSON.stringify(model.series[i]))).appendTo('#tracks');
+					}
+				}
+			</script>
+			<ol id="playlist">
+			</ol>
+			<div id="controls" style="display: block; opacity: 0.34483125;">
+    			<a class="left icon-32 icon-video-32" title="fullscreen" href="javascript:commands.fullscreen()"></a>
+				<a class="left icon-32 icon-play-32" title="play" href="javascript:commands.play()"></a>
+				<a class="left icon-32 icon-pause-32" title="pause" href="javascript:commands.pause()"></a>
+				<span class="right" id="timeLeft"></span>
+				<a class="right icon-32 icon-Volume-mute-32" title="Mute" href="javascript:commands.mute()"></a>
+				<div id="progress" class="ui-progressbar ui-widget ui-widget-content ui-corner-all" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="ui-progressbar-value ui-widget-header ui-corner-left" style="display: block; width: 0%;"></div></div>
+			</div>        
+		</div>
+		<script type="text/javascript">
+			$('#progress').progressbar({value:0});
+			$('#progress .ui-progressbar-value').show();
+			$('#console').toggle('slide', {direction:'up'}, 500);
+			
+			$(document)
+				.bindKey('Space', function(){ 
+					if($('#console input').is(':focus'))
+						return true;
+					commands.pause(); 
+				})
+				.bindKey('Left', function(){ 
+					if($('#console input').is(':focus'))
+						return true;
+					commands.rseek(-10000); 
+				})
+				.bindKey('Ctrl+Left', function(){ 
+					if($('#console input').is(':focus'))
+						return true;
+					commands.rseek(-60000); 
+				})
+				.bindKey('Right', function(){ 
+					if($('#console input').is(':focus'))
+						return true;
+					commands.rseek(10000);
+				})
+				.bindKey('Ctrl+Right', function(){ 
+					if($('#console input').is(':focus'))
+						return true;
+					commands.rseek(+60000); 
+				})
+				.bindKey('Plus', function(){ commands.rvolume(5); })
+				.bindKey('Minus', function(){ commands.rvolume(-5); })
+				.bindKey('Ctrl+Plus', function(){ commands.rvolume(10); })
+				.bindKey('Ctrl+Minus', function(){ commands.rvolume(-10); })
+				.bindKey('²', function(){ $('#console').toggle('slide', {direction:'up'}, 500, function(){ if($('#console').is(':visible')) $('#console input').focus(); return false; }); });
+				 
+			var clparser=/[^\\"' ]+|"(([^\\"]+|\\[^"]|\\")+)"|'(([^\\']+|\\[^']|\\')+')/g
+				
+			$('#console input').bindKey('Enter', function(){
+				var cl=$('#console input').val();
+				var commandLine=cl.match(clparser);
+				for(var i in commandLine)
+				{
+					commandLine[i]=clparser.exec(cl);
+					if(commandLine[i][3])
+					{
+						commandLine[i]=commandLine[i][3];
+					}
+					else if(commandLine[i][1])
+					{
+						commandLine[i]=commandLine[i][1];
+					}
+					else if(commandLine[i][0])
+					{
+						commandLine[i]=commandLine[i][0];
+					}
+				}
+				commands[commandLine[0]].apply(commands, commandLine.slice(1));
+			})
+				.bindKey('Space', function(){ return true; })
+				.bindKey('left', function(){ return true; })
+				.bindKey('right', function(){ return true; })
+				.bindKey('Ctrl+Left', function(){ return true; })
+				.bindKey('Ctrl+Right', function(){ return true; });
+			
+			var hide=setTimeout(function(){ $('#controls').fadeOut(); }, 2000);
+			
+			function displayControls(){
+				clearTimeout(hide);
+				$('#controls').fadeIn();
+				hide=setTimeout(function(){ if($('a[title="pause"]').is(':visible')) $('#controls').fadeOut(); }, 2000);
+			}
+						
+			$('#overlay').on('mousemove', displayControls);
+			
+			
+			
+			socket = io.connect('/');
+			
+			function pad(s, length, character)
+			{
+				var p='';
+				for(var i=0;i<length;i++)
+					p+=character || '0';
+				p=p+s.toString();
+				return p.substring(p.length-length);
+			}
+			
+			function status(vlc)
+			{
+				window.vlc=vlc;
+				$('a[title="play"]').toggle(vlc.input.state==4);
+				$('a[title="pause"]').toggle(vlc.input.state==3);
+				$('#progress .ui-progressbar-value').css('width', vlc.input.position*100+'%');
+				$('#progress').progressbar("option", {max:vlc.input.length});
+				var left=new Date(vlc.input.length-vlc.input.time);
+				if(left.getHours()>1)
+					$('#timeLeft').text('-'+pad(left.getHours()-1,2)+':'+pad(left.getMinutes(),2)+':'+pad(left.getSeconds(), 2));
+				else
+					$('#timeLeft').text('-'+pad(left.getMinutes(),2)+':'+pad(left.getSeconds(), 2));
+				if($('#player').data('artworkUrl')!=vlc.mediaDescription.artworkURL)
+				{
+					commands.artwork();
+					$('#player').data('artworkUrl', vlc.mediaDescription.artworkURL);
+				}
+				$('#player > .track-title').text(vlc.mediaDescription.title || '');
+				$('#player > .track-artist').text(vlc.mediaDescription.artist || '');
+				$('#player > .track-album').text(vlc.mediaDescription.album || '');
+			}
+			
+			socket.on('player.status', status);
+			
+			var commands={
+				mute:function (){
+					$.getJSON('mute');
+				},
+                fullscreen:function(){
+                  $.getJSON('/vlc/fullscreen');
+                },
+				play:function(vid){
+                    var url='/vlc/play'
+                    if(vid.indexOf('\\')>=0)
+                        url+='?id='+encodeURIComponent(vid);
+                    else
+                        url+='/'+vid;
+					$.ajax({type:'post', url:url, success:function(data){
+						status(data);
+						commands.playlist();
+						displayControls();
+					}});
+					displayControls();
+				},
+				stop:function(){
+					$.getJSON('/vlc/stop', status);
+					displayControls();
+				},
+				pause:function(){ 
+					$.getJSON('/vlc/pause', status);
+					displayControls();
+				},
+				rseek:function(time){
+					this.seek(vlc.input.time+time);
+				},
+				seek:function(time){
+					$.getJSON('/vlc/seek/'+time, status);
+					displayControls();
+				},
+				rvolume:function(volume){
+					this.volume(vlc.audio.volume+volume);
+				},
+				volume:function(volume){
+					$.getJSON('/vlc/volume/'+volume, status);
+					displayControls();
+				},
+				artwork:function(img){
+					//if(img)
+                    {
+						$('#artwork').attr('src', '/vlc/artwork?_='+Number(new Date()));
+                        $('#artwork').on('load', function()
+                        {
+                            ColorTunes.launch($('#artwork')[0],$('#artworkCanvas')[0]);                        
+                        });
+                    }
+					//else
+					//	socket.emit('player','artwork');
+				},
+				playlist:function()
+				{
+					$.getJSON('/vlc/playlist', function(playlist){
+						$('#playlist').empty();
+						$.each(playlist, function(index, item){
+							$('#playlist').append(renderMedia(item));
+						});
+					});
+				},
+				search:function(text)
+				{
+					$.ajax({url:'/vlc/search/video', type:'post', data:text, contentType:'text', dataType:'json', success:function(data){
+						$('#tracks').empty();
+						$.each(data.rows, function(index,item){
+							$('#tracks').append($('<li>'+item.doc.name+' '+(item.doc.season || '') + 'x'+(item.doc.episode || '')+'</li>').data('media', item.doc));
+						});
+					}});
+				}
+			};
+			
+			$('#tracks').on('dblclick', 'li', function(){
+				commands.play($(this).data('media')._id);
+			});
+			
+			$.get('/vlc/status', status);
+		  
+			setInterval(commands.playlist, 60000);
+		  
+			<!-- commands.play("file:///e:\\torrents\\[zz]_shion_no_ou_01.mp4"); -->
+			<!-- commands.play("file:///C:\\Users\\npenin\\Downloads\\White.Collar.S01E03.FRENCH.DVDRiP.XViD.avi"); -->
+		</script>
+    
+</body>
+</html>

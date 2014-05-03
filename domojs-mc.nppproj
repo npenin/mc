@@ -1,0 +1,49 @@
+<NotepadPlus>
+    <Project name="domojs">
+        <Folder name="assets">
+            <Folder name="js">
+                <File name="assets\js\bootstrap.js" />
+                <File name="assets\js\bootstrap.min.js" />
+                <File name="assets\js\color-tunes.js" />
+                <File name="assets\js\formatter.js" />
+                <File name="assets\js\jquery-1.7.2.min.js" />
+                <File name="assets\js\jquery-ui-1.8.22.min.js" />
+                <File name="assets\js\JQuery.ACT.js" />
+                <File name="assets\js\matcher.js" />
+                <File name="assets\js\quantize.js" />
+                <File name="assets\js\require.js" />
+                <File name="assets\js\routes.js" />
+                <File name="assets\js\routing.js" />
+                <File name="assets\js\socket.io.js" />
+            </Folder>
+            <Folder name="img">
+                <File name="assets\img\domojs-32.png" />
+                <File name="assets\img\ui-bg_flat_75_1b7ec3_40x100.png" />
+            </Folder>
+            <Folder name="fonts">
+                <File name="assets\fonts\glyphicons-halflings-regular.eot" />
+                <File name="assets\fonts\glyphicons-halflings-regular.svg" />
+                <File name="assets\fonts\glyphicons-halflings-regular.ttf" />
+                <File name="assets\fonts\glyphicons-halflings-regular.woff" />
+            </Folder>
+            <Folder name="css">
+                <File name="assets\css\bootstrap-theme.css" />
+                <File name="assets\css\bootstrap-theme.css.map" />
+                <File name="assets\css\bootstrap-theme.min.css" />
+                <File name="assets\css\bootstrap.css" />
+                <File name="assets\css\bootstrap.css.map" />
+                <File name="assets\css\bootstrap.min.css" />
+                <File name="assets\css\domojs-32.css" />
+                <File name="assets\css\jquery-ui-1.8.22.custom.css" />
+            </Folder>
+        </Folder>
+        <Folder name="views">
+            <File name="views\vlc\index.js.html" />
+            <File name="views\vlc\player.js.html" />
+        </Folder>
+        <Folder name="controllers">
+            <File name="controllers\home.js" />
+            <File name="controllers\vlc.js" />
+        </Folder>
+    </Project>
+</NotepadPlus>
